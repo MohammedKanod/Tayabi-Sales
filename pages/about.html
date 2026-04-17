@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>About – Tayabi Hardware</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>
+    .about-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--gray-50); padding: 24px; }
+    .about-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow-lg); padding: 48px 40px; max-width: 480px; width: 100%; text-align: center; }
+    .about-icon { font-size: 3rem; margin-bottom: 16px; }
+    .about-card h1 { font-size: 1.75rem; margin-bottom: 6px; }
+    .about-tagline { color: var(--gray-500); font-size: 1rem; margin-bottom: 32px; }
+    .about-info { background: var(--gray-50); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+    .about-info p { font-size: 1rem; color: var(--gray-700); margin-bottom: 8px; }
+    .about-info p:last-child { margin-bottom: 0; }
+    .about-info .label { font-weight: 700; color: var(--gray-900); }
+    .back-link { display: inline-block; margin-top: 20px; color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+    .back-link:hover { text-decoration: underline; }
+    @media (max-width: 500px) { .about-card { padding: 32px 20px; } }
+  </style>
+</head>
+<body>
+<div class="about-wrapper">
+  <div class="about-card">
+    <div class="about-icon">&#128296;</div>
+    <h1>Tayabi Hardware</h1>
+    <p class="about-tagline">Wholesale Order Management System</p>
+    <div class="about-info">
+      <p><span class="label">Made for:</span> Tayabi Sales</p>
+      <p><span class="label">Made by:</span> Mohammed Kanodwala</p>
+      <p><span class="label">Version:</span> 1.0.0</p>
+    </div>
+    <p style="font-size:0.9rem;color:var(--gray-400);">
+      A complete order and stock management solution built with Firebase Firestore for real-time data sync.
+    </p>
+    <a href="../index.html" class="back-link">← Back to Home</a>
+  </div>
+</div>
+</body>
+</html>

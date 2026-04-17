@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel – Tayabi Hardware</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <link rel="stylesheet" href="../css/admin.css"/>
+</head>
+<body>
+<div class="page-layout">
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand">&#128296; Tayabi Hardware</a>
+    <span style="color:var(--gray-500);font-size:0.9rem;font-weight:600;">Admin Panel</span>
+  </nav>
+
+  <!-- LOW STOCK ALERT -->
+  <div id="low-stock-section" class="page-content" style="padding-bottom:0;max-width:1100px;">
+    <div id="low-stock-banner"></div>
+  </div>
+
+  <div class="page-content">
+    <!-- TABS -->
+    <div class="tab-bar" style="margin-bottom:24px;">
+      <button class="tab-btn active" data-tab="items">Items</button>
+      <button class="tab-btn" data-tab="stock">Stock</button>
+      <button class="tab-btn" data-tab="customers">Customers</button>
+      <button class="tab-btn" data-tab="orders">Orders</button>
+      <button class="tab-btn" data-tab="upload">Photo Upload</button>
+    </div>
+
+    <!-- ITEMS TAB -->
+    <div id="tab-items" class="tab-panel">
+      <div class="section-header">
+        <div class="section-title"><h2>Manage Items</h2></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" id="btn-add-item">+ Add Item</button>
+          <button class="btn btn-secondary btn-sm" id="btn-bulk-items">+ Bulk Add</button>
+        </div>
+      </div>
+      <div class="search-bar" style="margin-bottom:16px;max-width:380px;">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="item-search" placeholder="Search items..."/>
+      </div>
+      <div id="items-list"></div>
+    </div>
+
+    <!-- STOCK TAB -->
+    <div id="tab-stock" class="tab-panel hidden">
+      <h2 style="margin-bottom:20px;">Stock Management</h2>
+      <div class="grid-2" style="gap:24px;">
+        <!-- Add Stock -->
+        <div class="card">
+          <h3 style="margin-bottom:16px;color:var(--success);">&#43; Add Stock</h3>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Select Item</label>
+            <select id="stock-add-item"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label>Quantity</label>
+            <input type="number" id="stock-add-qty" min="1" placeholder="Enter quantity"/>
+          </div>
+          <button class="btn btn-success" id="btn-add-stock" style="width:100%;">Add Stock</button>
+        </div>
+        <!-- Remove Stock -->
+        <div class="card">
+          <h3 style="margin-bottom:16px;color:var(--danger);">&#8722; Remove Stock</h3>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Select Item</label>
+            <select id="stock-remove-item"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label>Quantity</label>
+            <input type="number" id="stock-remove-qty" min="1" placeholder="Enter quantity"/>
+          </div>
+          <button class="btn btn-danger" id="btn-remove-stock" style="width:100%;">Remove Stock</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:24px;">
+        <div class="section-header">
+          <h3>Stock Log</h3>
+          <div class="form-group" style="min-width:220px;">
+            <select id="stock-log-item"></select>
+          </div>
+        </div>
+        <div id="stock-log-list"></div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS TAB -->
+    <div id="tab-customers" class="tab-panel hidden">
+      <div class="section-header">
+        <div class="section-title"><h2>Manage Customers</h2></div>
+        <button class="btn btn-primary btn-sm" id="btn-add-customer">+ Add Customer</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <div class="search-bar" style="flex:1;min-width:200px;">
+          <span class="search-icon">🔍</span>
+          <input type="search" id="customer-search" placeholder="Search by name or phone..."/>
+        </div>
+        <select id="customer-city-filter" style="max-width:200px;">
+          <option value="">All Cities</option>
+        </select>
+        <select id="customer-sort" style="max-width:180px;">
+          <option value="name">Sort by Name</option>
+          <option value="city">Sort by City</option>
+        </select>
+      </div>
+      <div id="customers-list"></div>
+    </div>
+
+    <!-- ORDERS TAB -->
+    <div id="tab-orders" class="tab-panel hidden">
+      <div class="section-header">
+        <div class="section-title"><h2>Orders</h2></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <div class="search-bar" style="flex:1;min-width:200px;">
+          <span class="search-icon">🔍</span>
+          <input type="search" id="order-search" placeholder="Search by customer..."/>
+        </div>
+        <input type="date" id="order-date-filter" style="max-width:200px;"/>
+        <select id="order-status-filter" style="max-width:160px;">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div id="orders-list"></div>
+    </div>
+
+    <!-- PHOTO UPLOAD TAB -->
+    <div id="tab-upload" class="tab-panel hidden">
+      <h2 style="margin-bottom:20px;">Bulk Photo Upload &amp; Name Items</h2>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="photo-upload-box" id="bulk-photo-drop">
+          <div class="upload-icon">📷</div>
+          <div class="upload-label">Click to select multiple photos<br/><small>Upload multiple item photos at once, then name and set stock for each</small></div>
+          <input type="file" id="bulk-photo-input" multiple accept="image/*"/>
+        </div>
+      </div>
+      <div id="bulk-photo-items"></div>
+      <div id="bulk-photo-actions" class="hidden">
+        <button class="btn btn-primary" id="btn-save-photo-items">Save All Items</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Single Item -->
+<div class="modal-overlay hidden" id="modal-add-item">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Add Item</h3>
+      <button class="modal-close" data-close="modal-add-item">&times;</button>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Item Name *</label>
+      <input type="text" id="ai-name" placeholder="e.g. Steel Rod"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Unit *</label>
+      <div class="radio-group" id="ai-unit-group">
+        <label class="radio-option"><input type="radio" name="ai-unit" value="kg"/><span>kg</span></label>
+        <label class="radio-option"><input type="radio" name="ai-unit" value="pcs"/><span>pcs</span></label>
+        <label class="radio-option"><input type="radio" name="ai-unit" value="meter"/><span>meter</span></label>
+        <label class="radio-option"><input type="radio" name="ai-unit" value="other"/><span>Other</span></label>
+      </div>
+      <input type="text" id="ai-unit-other" placeholder="Specify unit..." class="hidden" style="margin-top:8px;"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Sizes (optional, comma separated)</label>
+      <input type="text" id="ai-sizes" placeholder="e.g. 6mm, 8mm, 10mm"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Initial Stock *</label>
+      <input type="number" id="ai-stock" min="0" placeholder="0"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Item Photo (optional)</label>
+      <div class="photo-upload-box" style="padding:12px;">
+        <div class="upload-icon">📷</div>
+        <div class="upload-label">Click to select photo</div>
+        <input type="file" id="ai-photo" accept="image/*"/>
+      </div>
+      <div id="ai-photo-preview" style="margin-top:8px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close="modal-add-item">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-item">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Bulk Add Items -->
+<div class="modal-overlay hidden" id="modal-bulk-items">
+  <div class="modal-box" style="max-width:700px;">
+    <div class="modal-header">
+      <h3>Bulk Add Items</h3>
+      <button class="modal-close" data-close="modal-bulk-items">&times;</button>
+    </div>
+    <p style="color:var(--gray-500);font-size:0.9rem;margin-bottom:16px;">Fill in each card. Empty cards will be skipped.</p>
+    <div id="bulk-items-container"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close="modal-bulk-items">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-bulk">Save All</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Customer -->
+<div class="modal-overlay hidden" id="modal-add-customer">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Add Customer</h3>
+      <button class="modal-close" data-close="modal-add-customer">&times;</button>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Customer Name *</label>
+      <input type="text" id="ac-name" placeholder="Full name"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Phone *</label>
+      <input type="tel" id="ac-phone" placeholder="Mobile number"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Address</label>
+      <textarea id="ac-address" placeholder="Address (optional)"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>City</label>
+      <div style="display:flex;gap:8px;">
+        <select id="ac-city" style="flex:1;"></select>
+        <button class="btn btn-secondary btn-sm" id="btn-add-city-inline" style="white-space:nowrap;">+ New City</button>
+      </div>
+      <input type="text" id="ac-new-city" placeholder="Enter new city name" class="hidden" style="margin-top:8px;"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close="modal-add-customer">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-customer">Save Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Customer Orders -->
+<div class="modal-overlay hidden" id="modal-customer-orders">
+  <div class="modal-box" style="max-width:700px;">
+    <div class="modal-header">
+      <h3 id="customer-orders-title">Order History</h3>
+      <button class="modal-close" data-close="modal-customer-orders">&times;</button>
+    </div>
+    <div id="customer-orders-list"></div>
+  </div>
+</div>
+
+<!-- MODAL: Order Detail -->
+<div class="modal-overlay hidden" id="modal-order-detail">
+  <div class="modal-box" style="max-width:700px;">
+    <div class="modal-header">
+      <h3>Order Detail</h3>
+      <button class="modal-close" data-close="modal-order-detail">&times;</button>
+    </div>
+    <div id="order-detail-content"></div>
+    <div class="modal-actions" id="order-detail-actions"></div>
+  </div>
+</div>
+
+<script type="module" src="../js/admin.js"></script>
+</body>
+</html>
