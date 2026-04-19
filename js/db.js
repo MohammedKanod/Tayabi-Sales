@@ -104,7 +104,11 @@ export function subscribeOrders(callback) {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   });
 }
-export async function placeOrder(orderId, customerId, customerName, items) {
+export async function placeOrder(orderId, customerId, customerName, items, deleteAfterDays) {
+  const deleteAt = (deleteAfterDays && deleteAfterDays > 0)
+    ? Date.now() + deleteAfterDays * 24 * 60 * 60 * 1000
+    : null;
+
   await runTransaction(db, async (t) => {
     // Duplicate order protection: check if order ID already exists
     const orderRef = doc(db, 'orders', orderId);
@@ -140,9 +144,24 @@ export async function placeOrder(orderId, customerId, customerName, items) {
       items,
       totalItems: items.reduce((s, i) => s + i.qty, 0),
       status: 'pending',
-      timestamp: serverTimestamp()
+      timestamp: serverTimestamp(),
+      deleteAfterDays: deleteAfterDays || null,
+      deleteAt: deleteAt
     });
   });
+}
+
+export async function deleteOrder(id) {
+  await deleteDoc(doc(db, 'orders', id));
+}
+
+export async function deleteExpiredOrders(orders) {
+  const now = Date.now();
+  const expired = orders.filter(o => o.deleteAt && o.deleteAt <= now);
+  for (const o of expired) {
+    try { await deleteDoc(doc(db, 'orders', o.id)); } catch (e) { console.error('Auto-delete failed:', e); }
+  }
+  return expired.length;
 }
 export async function markOrderCompleted(orderId) {
   await updateDoc(doc(db, 'orders', orderId), { status: 'completed' });

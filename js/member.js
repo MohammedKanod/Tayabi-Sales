@@ -245,6 +245,7 @@ document.getElementById('btn-place-order').onclick = async () => {
   }
 
   const orderId = generateOrderId();
+  const deleteAfterDays = Number(document.getElementById('order-delete-interval').value) || 0;
   const items = cart.map(c => ({
     itemId: c.itemId,
     name: c.name,
@@ -254,7 +255,7 @@ document.getElementById('btn-place-order').onclick = async () => {
 
   try {
     showSpinner();
-    await placeOrder(orderId, selectedCustomer.id, selectedCustomer.name, items);
+    await placeOrder(orderId, selectedCustomer.id, selectedCustomer.name, items, deleteAfterDays);
     cart = [];
     renderCart();
     showToast(`Order ${orderId} placed successfully!`, 'success');

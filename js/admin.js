@@ -1,6 +1,7 @@
 import { subscribeItems, addItem, addItems, deleteItem, addStock, removeStock,
          subscribeCustomers, addCustomer, deleteCustomer,
-         subscribeOrders, markOrderCompleted, getOrdersByCustomer, getStockLogs,
+         subscribeOrders, markOrderCompleted, deleteOrder, deleteExpiredOrders,
+         getOrdersByCustomer, getStockLogs,
          getCities, addCity, uploadImage } from './db.js';
 import { showToast, showSpinner, hideSpinner, confirmDialog, formatDate,
          getStockStatus, emptyState, fileToBase64, debounce } from './utils.js';
@@ -463,6 +464,7 @@ window.viewCustomerOrders = async (customerId, name) => {
 // ===== ORDERS =====
 subscribeOrders(orders => {
   allOrders = orders;
+  deleteExpiredOrders(orders);
   renderOrders();
 });
 
@@ -489,6 +491,16 @@ function renderOrders() {
 
 function renderOrderCard(order, showActions) {
   const isPending = order.status === 'pending';
+  let autoDeleteInfo = '';
+  if (order.deleteAt) {
+    const diff = order.deleteAt - Date.now();
+    if (diff > 0) {
+      const daysLeft = Math.ceil(diff / (24 * 60 * 60 * 1000));
+      autoDeleteInfo = `<span style="font-size:0.78rem;color:var(--gray-400);margin-left:8px;">🗑 Auto-deletes in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}</span>`;
+    } else {
+      autoDeleteInfo = `<span style="font-size:0.78rem;color:var(--danger);margin-left:8px;">🗑 Pending deletion</span>`;
+    }
+  }
   return `
     <div class="order-card">
       <div class="order-card-header">
@@ -498,6 +510,7 @@ function renderOrderCard(order, showActions) {
           <div style="margin-top:6px;">
             <span class="badge ${isPending ? 'badge-yellow' : 'badge-green'}">${order.status}</span>
             <span style="margin-left:8px;font-size:0.85rem;color:var(--gray-500);">${order.totalItems} items total</span>
+            ${autoDeleteInfo}
           </div>
         </div>
         ${showActions ? `<div class="order-card-actions">
@@ -505,6 +518,7 @@ function renderOrderCard(order, showActions) {
           ${isPending ? `<button class="btn btn-success btn-sm" onclick="completeOrderHandler('${order.id}')">Mark Complete</button>` : ''}
           <button class="btn btn-secondary btn-sm" onclick="exportOrderPDF(${JSON.stringify(order).replace(/"/g, '&quot;')})">PDF</button>
           <button class="btn btn-secondary btn-sm" onclick="shareWhatsApp(${JSON.stringify(order).replace(/"/g, '&quot;')})">WhatsApp</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteOrderHandler('${order.id}')">Delete</button>
         </div>` : ''}
       </div>
     </div>`;
@@ -550,6 +564,12 @@ window.closeModal = closeModal;
 window.completeOrderHandler = async (orderId) => {
   if (!confirmDialog('Mark this order as completed?')) return;
   try { showSpinner(); await markOrderCompleted(orderId); showToast('Order marked as completed', 'success'); }
+  catch (e) { showToast(e.message, 'error'); } finally { hideSpinner(); }
+};
+
+window.deleteOrderHandler = async (orderId) => {
+  if (!confirmDialog('Delete this order? This cannot be undone.')) return;
+  try { showSpinner(); await deleteOrder(orderId); showToast('Order deleted', 'success'); }
   catch (e) { showToast(e.message, 'error'); } finally { hideSpinner(); }
 };
 
