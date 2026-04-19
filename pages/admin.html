@@ -9,6 +9,58 @@
   <link rel="stylesheet" href="../css/admin.css"/>
 </head>
 <body>
+
+<!-- PASSWORD GATE -->
+<div id="admin-pw-gate" style="position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:18px;padding:44px 36px;max-width:380px;width:92%;text-align:center;box-shadow:0 16px 60px rgba(0,0,0,0.4);">
+    <div style="font-size:2.8rem;margin-bottom:14px;">🔒</div>
+    <h2 style="margin-bottom:6px;font-size:1.5rem;">Admin Access</h2>
+    <p style="color:#64748b;font-size:0.9rem;margin-bottom:26px;">Enter the admin password to continue</p>
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password"
+      style="width:100%;padding:13px 15px;border:2px solid #e2e8f0;border-radius:10px;font-size:1rem;margin-bottom:10px;box-sizing:border-box;outline:none;transition:border-color 0.2s;"
+      onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e2e8f0'"/>
+    <div id="pw-error" style="color:#dc2626;font-size:0.85rem;margin-bottom:12px;display:none;">Incorrect password. Please try again.</div>
+    <button id="btn-pw-submit"
+      style="width:100%;padding:13px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:background 0.2s;"
+      onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Enter Admin Panel</button>
+    <div style="margin-top:18px;">
+      <a href="../index.html" style="color:#94a3b8;font-size:0.85rem;text-decoration:none;">← Back to Home</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const DEFAULT_PW = 'Tayabi@5253';
+  function getStoredPw() { return localStorage.getItem('tayabi_admin_pw') || DEFAULT_PW; }
+  const gate = document.getElementById('admin-pw-gate');
+  const input = document.getElementById('pw-input');
+  const errEl = document.getElementById('pw-error');
+  const btn = document.getElementById('btn-pw-submit');
+
+  if (sessionStorage.getItem('tayabi_admin_auth') === '1') {
+    gate.style.display = 'none';
+    return;
+  }
+
+  function checkPw() {
+    if (input.value === getStoredPw()) {
+      sessionStorage.setItem('tayabi_admin_auth', '1');
+      gate.style.display = 'none';
+      errEl.style.display = 'none';
+    } else {
+      errEl.style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  btn.onclick = checkPw;
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') checkPw(); });
+  setTimeout(function () { input.focus(); }, 100);
+})();
+</script>
+
 <div class="page-layout">
   <nav class="navbar">
     <a href="../index.html" class="navbar-brand">&#128296; Tayabi Hardware</a>

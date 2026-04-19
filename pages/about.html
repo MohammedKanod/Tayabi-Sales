@@ -10,7 +10,7 @@
     .about-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--gray-50); padding: 24px; }
     .about-card { background: var(--white); border-radius: 16px; box-shadow: var(--shadow-lg); padding: 48px 40px; max-width: 480px; width: 100%; text-align: center; }
     .about-icon { font-size: 3rem; margin-bottom: 16px; }
-    .about-card h1 { font-size: 1.75rem; margin-bottom: 6px; }
+    .about-card h1 { font-size: 1.75rem; margin-bottom: 6px; cursor: default; user-select: none; }
     .about-tagline { color: var(--gray-500); font-size: 1rem; margin-bottom: 32px; }
     .about-info { background: var(--gray-50); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
     .about-info p { font-size: 1rem; color: var(--gray-700); margin-bottom: 8px; }
@@ -19,13 +19,27 @@
     .back-link { display: inline-block; margin-top: 20px; color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.95rem; }
     .back-link:hover { text-decoration: underline; }
     @media (max-width: 500px) { .about-card { padding: 32px 20px; } }
+
+    /* Change Password Modal */
+    .pw-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9000; display: flex; align-items: center; justify-content: center; }
+    .pw-modal-box { background: #fff; border-radius: 16px; padding: 36px 30px; max-width: 360px; width: 92%; text-align: center; box-shadow: 0 12px 50px rgba(0,0,0,0.3); }
+    .pw-modal-box h3 { font-size: 1.2rem; margin-bottom: 6px; }
+    .pw-modal-box p { color: #64748b; font-size: 0.88rem; margin-bottom: 20px; }
+    .pw-modal-input { width: 100%; padding: 11px 13px; border: 2px solid #e2e8f0; border-radius: 9px; font-size: 0.95rem; box-sizing: border-box; margin-bottom: 10px; outline: none; }
+    .pw-modal-input:focus { border-color: #2563eb; }
+    .pw-modal-error { color: #dc2626; font-size: 0.82rem; margin-bottom: 10px; display: none; }
+    .pw-modal-success { color: #16a34a; font-size: 0.85rem; margin-bottom: 10px; display: none; }
+    .pw-modal-btn-row { display: flex; gap: 10px; margin-top: 4px; }
+    .pw-modal-btn { flex: 1; padding: 11px; border: none; border-radius: 9px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+    .pw-modal-btn-cancel { background: #f1f5f9; color: #475569; }
+    .pw-modal-btn-save { background: #2563eb; color: #fff; }
   </style>
 </head>
 <body>
 <div class="about-wrapper">
   <div class="about-card">
     <div class="about-icon">&#128296;</div>
-    <h1>Tayabi Hardware</h1>
+    <h1 id="about-title">Tayabi Hardware</h1>
     <p class="about-tagline">Wholesale Order Management System</p>
     <div class="about-info">
       <p><span class="label">Made for:</span> Tayabi Sales</p>
@@ -38,5 +52,91 @@
     <a href="../index.html" class="back-link">← Back to Home</a>
   </div>
 </div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="pw-modal-overlay" id="pw-change-modal" style="display:none;">
+  <div class="pw-modal-box">
+    <div style="font-size:2rem;margin-bottom:10px;">🔑</div>
+    <h3>Change Admin Password</h3>
+    <p>Enter a new password for the Admin Panel.</p>
+    <input type="password" class="pw-modal-input" id="pw-new" placeholder="New password"/>
+    <input type="password" class="pw-modal-input" id="pw-confirm" placeholder="Confirm new password"/>
+    <div class="pw-modal-error" id="pw-change-error"></div>
+    <div class="pw-modal-success" id="pw-change-success">Password changed successfully!</div>
+    <div class="pw-modal-btn-row">
+      <button class="pw-modal-btn pw-modal-btn-cancel" id="pw-modal-cancel">Cancel</button>
+      <button class="pw-modal-btn pw-modal-btn-save" id="pw-modal-save">Save Password</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const DEFAULT_PW = 'Tayabi@5253';
+  const CLICK_TARGET = 20;
+  const CLICK_WINDOW_MS = 4000;
+
+  let clickTimes = [];
+
+  const title = document.getElementById('about-title');
+  const modal = document.getElementById('pw-change-modal');
+  const pwNew = document.getElementById('pw-new');
+  const pwConfirm = document.getElementById('pw-confirm');
+  const errEl = document.getElementById('pw-change-error');
+  const successEl = document.getElementById('pw-change-success');
+
+  title.addEventListener('click', function () {
+    const now = Date.now();
+    clickTimes.push(now);
+    clickTimes = clickTimes.filter(t => now - t <= CLICK_WINDOW_MS);
+    if (clickTimes.length >= CLICK_TARGET) {
+      clickTimes = [];
+      openPwModal();
+    }
+  });
+
+  function openPwModal() {
+    pwNew.value = '';
+    pwConfirm.value = '';
+    errEl.style.display = 'none';
+    successEl.style.display = 'none';
+    modal.style.display = 'flex';
+    setTimeout(function () { pwNew.focus(); }, 100);
+  }
+
+  function closePwModal() {
+    modal.style.display = 'none';
+  }
+
+  document.getElementById('pw-modal-cancel').onclick = closePwModal;
+
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closePwModal();
+  });
+
+  document.getElementById('pw-modal-save').onclick = function () {
+    const np = pwNew.value;
+    const cp = pwConfirm.value;
+    errEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    if (!np) {
+      errEl.textContent = 'Password cannot be empty.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (np !== cp) {
+      errEl.textContent = 'Passwords do not match.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    localStorage.setItem('tayabi_admin_pw', np);
+    sessionStorage.removeItem('tayabi_admin_auth');
+    successEl.style.display = 'block';
+    setTimeout(closePwModal, 1500);
+  };
+})();
+</script>
 </body>
 </html>
