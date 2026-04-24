@@ -2,7 +2,9 @@ import { subscribeItems, addItem, addItems, deleteItem, addStock, removeStock,
          subscribeCustomers, addCustomer, deleteCustomer,
          subscribeOrders, markOrderCompleted, deleteOrder, deleteExpiredOrders,
          getOrdersByCustomer, getStockLogs,
-         getCities, addCity, uploadImage } from './db.js';
+         getCities, addCity, uploadImage,
+         subscribePendingRequests, approveRequestLinkExisting, approveRequestCreateNew, rejectCustomerRequest,
+         subscribeCustomerOrders, updateOrderStatus } from './db.js';
 import { showToast, showSpinner, hideSpinner, confirmDialog, formatDate,
          getStockStatus, emptyState, fileToBase64, debounce } from './utils.js';
 
@@ -679,5 +681,202 @@ document.getElementById('btn-save-photo-items').onclick = async () => {
     document.getElementById('bulk-photo-actions').classList.add('hidden');
     document.getElementById('bulk-photo-input').value = '';
     showToast(`${items.length} item(s) saved!`, 'success');
+  } catch (e) { showToast(e.message, 'error'); } finally { hideSpinner(); }
+};
+
+// ===== CUSTOMER REQUESTS =====
+let allRequests = [];
+subscribePendingRequests(reqs => {
+  allRequests = reqs;
+  renderRequests();
+  const badge = document.getElementById('requests-badge');
+  if (reqs.length) {
+    badge.textContent = reqs.length;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+});
+
+function renderRequests() {
+  const container = document.getElementById('requests-list');
+  if (!allRequests.length) { container.innerHTML = emptyState('No pending requests'); return; }
+  container.innerHTML = `
+    <div class="requests-grid">
+      ${allRequests.map(r => `
+        <div class="request-card">
+          <div class="request-avatar">
+            ${r.photoURL
+              ? `<img src="${r.photoURL}" alt="" referrerpolicy="no-referrer"/>`
+              : `<div class="ph">👤</div>`}
+          </div>
+          <div class="request-info">
+            <div class="request-name">${escapeHtmlSafe(r.name || 'Unnamed user')}</div>
+            <div class="request-email">${escapeHtmlSafe(r.email || '-')}</div>
+            <div class="request-meta">Requested ${formatDate(r.createdAt)}</div>
+          </div>
+          <div class="request-actions">
+            <button class="btn btn-success btn-sm" onclick="approveRequestHandler('${r.id}')">Approve</button>
+            <button class="btn btn-danger btn-sm" onclick="rejectRequestHandler('${r.id}')">Reject</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+let activeRequest = null;
+let approveMode = 'link'; // 'link' or 'create'
+
+window.approveRequestHandler = (id) => {
+  const req = allRequests.find(r => r.id === id);
+  if (!req) return;
+  activeRequest = req;
+  approveMode = 'link';
+
+  // Header
+  document.getElementById('approve-email').textContent = req.email || '';
+  const avatar = document.getElementById('approve-avatar');
+  avatar.innerHTML = req.photoURL
+    ? `<img src="${req.photoURL}" alt="" referrerpolicy="no-referrer"/>`
+    : '<div class="ph">👤</div>';
+  document.getElementById('approve-google-name').textContent = req.name || '';
+
+  // Mode toggle defaults to "Link existing"
+  document.querySelector('input[name="approve-mode"][value="link"]').checked = true;
+  toggleApproveMode('link');
+
+  // Populate existing-customer dropdown
+  const sel = document.getElementById('approve-existing-customer');
+  sel.innerHTML = '<option value="">Select a customer…</option>' +
+    [...allCustomers]
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      .map(c => {
+        const tag = c.email ? ' (already linked)' : '';
+        return `<option value="${c.id}" ${c.email ? 'disabled' : ''}>${escapeHtmlSafe(c.name)} – ${c.phone || ''}${tag}</option>`;
+      }).join('');
+
+  // Reset "create new" fields, prefill name
+  document.getElementById('approve-new-name').value = req.name || '';
+  document.getElementById('approve-new-phone').value = '';
+  document.getElementById('approve-new-address').value = '';
+  // City dropdown
+  const citySel = document.getElementById('approve-new-city');
+  citySel.innerHTML = '<option value="">Select city…</option>' +
+    cities.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  openModal('modal-approve-request');
+};
+
+function toggleApproveMode(mode) {
+  approveMode = mode;
+  document.getElementById('approve-link-section').classList.toggle('hidden', mode !== 'link');
+  document.getElementById('approve-create-section').classList.toggle('hidden', mode !== 'create');
+}
+
+document.querySelectorAll('input[name="approve-mode"]').forEach(r => {
+  r.addEventListener('change', () => toggleApproveMode(r.value));
+});
+
+document.getElementById('btn-confirm-approve').addEventListener('click', async () => {
+  if (!activeRequest) return;
+  try {
+    showSpinner();
+    if (approveMode === 'link') {
+      const customerId = document.getElementById('approve-existing-customer').value;
+      if (!customerId) { hideSpinner(); showToast('Pick a customer to link', 'error'); return; }
+      await approveRequestLinkExisting(activeRequest.id, customerId, activeRequest.email);
+    } else {
+      const name = document.getElementById('approve-new-name').value.trim();
+      const phone = document.getElementById('approve-new-phone').value.trim();
+      const address = document.getElementById('approve-new-address').value.trim();
+      const city = document.getElementById('approve-new-city').value;
+      if (!name) { hideSpinner(); showToast('Customer name is required', 'error'); return; }
+      if (!phone) { hideSpinner(); showToast('Phone number is required', 'error'); return; }
+      await approveRequestCreateNew(activeRequest.id, {
+        name, phone, address, city, email: activeRequest.email
+      });
+    }
+    closeModal('modal-approve-request');
+    showToast('Customer approved', 'success');
+    activeRequest = null;
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || 'Failed to approve. Please try again.', 'error');
+  } finally { hideSpinner(); }
+});
+
+window.rejectRequestHandler = async (id) => {
+  const req = allRequests.find(r => r.id === id);
+  if (!req) return;
+  if (!confirmDialog(`Reject request from ${req.email || 'this user'}? This will delete the request.`)) return;
+  try {
+    showSpinner();
+    await rejectCustomerRequest(id);
+    showToast('Request rejected', 'success');
+  } catch (e) { showToast(e.message, 'error'); } finally { hideSpinner(); }
+};
+
+// ===== CUSTOMER ORDERS =====
+let allCustomerOrders = [];
+subscribeCustomerOrders(orders => {
+  allCustomerOrders = orders;
+  renderCustomerOrders();
+});
+
+function renderCustomerOrders() {
+  const q = (document.getElementById('cust-order-search').value || '').toLowerCase();
+  const status = document.getElementById('cust-order-status-filter').value;
+  const list = allCustomerOrders.filter(o => {
+    const haystack = `${o.customerEmail || ''} ${o.customerName || ''} ${o.customerPhone || ''}`.toLowerCase();
+    return (!q || haystack.includes(q)) && (!status || o.status === status);
+  });
+
+  const container = document.getElementById('cust-orders-list');
+  if (!list.length) { container.innerHTML = emptyState('No customer orders found'); return; }
+
+  container.innerHTML = list.map(o => {
+    const itemsHtml = (o.items || []).map(i =>
+      `<div style="font-size:0.88rem;">• ${escapeHtmlSafe(i.name)} <b>× ${i.quantity}</b></div>`
+    ).join('');
+    const badgeCls = o.status === 'completed' ? 'badge-green'
+                   : o.status === 'cancelled' ? 'badge-red' : 'badge-yellow';
+    const heading = o.customerName || o.customerEmail || o.customerPhone || 'Unknown';
+    const subline = [o.customerEmail, o.customerPhone].filter(Boolean).join(' · ');
+    return `
+      <div class="order-card">
+        <div class="order-card-header" style="align-items:flex-start;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:1rem;">👤 ${escapeHtmlSafe(heading)}</div>
+            ${subline ? `<div style="font-size:0.85rem;color:var(--gray-500);">${escapeHtmlSafe(subline)}</div>` : ''}
+            <div style="font-size:0.8rem;color:var(--gray-400);">ID: ${o.id} · ${formatDate(o.createdAt)}</div>
+            <div style="margin-top:6px;">
+              <span class="badge ${badgeCls}">${o.status || 'pending'}</span>
+            </div>
+            <div style="margin-top:10px;">${itemsHtml || '<i style="color:var(--gray-400);">No items</i>'}</div>
+            ${o.remark ? `<div style="margin-top:8px;font-size:0.88rem;background:var(--gray-50);padding:8px 10px;border-radius:8px;"><b>Remark:</b> ${escapeHtmlSafe(o.remark)}</div>` : ''}
+          </div>
+          <div class="order-card-actions" style="align-items:flex-end;">
+            <select onchange="updateCustomerOrderStatus('${o.id}', this.value)" style="min-width:140px;">
+              <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Pending</option>
+              <option value="completed" ${o.status === 'completed' ? 'selected' : ''}>Completed</option>
+              <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+            </select>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function escapeHtmlSafe(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+document.getElementById('cust-order-search').addEventListener('input', debounce(renderCustomerOrders, 250));
+document.getElementById('cust-order-status-filter').addEventListener('change', renderCustomerOrders);
+
+window.updateCustomerOrderStatus = async (id, status) => {
+  try {
+    showSpinner();
+    await updateOrderStatus(id, status);
+    showToast(`Order marked ${status}`, 'success');
   } catch (e) { showToast(e.message, 'error'); } finally { hideSpinner(); }
 };

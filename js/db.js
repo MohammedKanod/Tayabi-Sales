@@ -172,6 +172,97 @@ export async function getOrdersByCustomer(customerId) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
+// ===== PRODUCTS (customer dashboard) =====
+export function subscribeProducts(callback) {
+  const q = query(collection(db, 'products'), orderBy('name'));
+  return onSnapshot(q, snap => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  });
+}
+
+export async function placeCustomerOrder({ customerEmail, customerName, customerPhone, items, remark }) {
+  return await addDoc(collection(db, 'orders'), {
+    customerEmail: customerEmail || '',
+    customerName: customerName || '',
+    customerPhone: customerPhone || '',
+    items: items.map(i => ({ productId: i.productId, name: i.name, quantity: i.quantity })),
+    remark: remark || '',
+    status: 'pending',
+    createdAt: serverTimestamp()
+  });
+}
+
+// ===== CUSTOMER REQUESTS (admin) =====
+export function subscribePendingRequests(callback) {
+  const q = query(collection(db, 'customer_requests'), where('status', '==', 'pending'));
+  return onSnapshot(q, snap => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  });
+}
+// Approve a request by linking the request's email to an existing customer.
+export async function approveRequestLinkExisting(reqId, customerId, email) {
+  await updateDoc(doc(db, 'customers', customerId), { email });
+  await deleteDoc(doc(db, 'customer_requests', reqId));
+}
+
+// Approve a request by creating a brand-new customer with the email attached.
+export async function approveRequestCreateNew(reqId, customerData) {
+  await addDoc(collection(db, 'customers'), {
+    ...customerData,
+    createdAt: serverTimestamp()
+  });
+  await deleteDoc(doc(db, 'customer_requests', reqId));
+}
+
+export async function rejectCustomerRequest(id) {
+  await deleteDoc(doc(db, 'customer_requests', id));
+}
+
+// ===== CUSTOMER ORDERS (admin) =====
+export function subscribeCustomerOrders(callback) {
+  const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, snap => {
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // customer-placed orders carry an email (or, for backwards compat, a phone)
+    callback(all.filter(o => !!o.customerEmail || !!o.customerPhone));
+  });
+}
+export async function updateOrderStatus(orderId, status) {
+  await updateDoc(doc(db, 'orders', orderId), { status });
+}
+
+// ===== CUSTOMER LOGIN (Google) =====
+export async function findCustomerByEmail(email) {
+  const q = query(collection(db, 'customers'), where('email', '==', email));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() };
+}
+
+// Create a pending request, or refresh the existing one for this email.
+export async function createOrUpdateCustomerRequest({ email, name, photoURL }) {
+  const q = query(collection(db, 'customer_requests'), where('email', '==', email));
+  const snap = await getDocs(q);
+  if (!snap.empty) {
+    const id = snap.docs[0].id;
+    await updateDoc(doc(db, 'customer_requests', id), {
+      name: name || snap.docs[0].data().name || '',
+      photoURL: photoURL || snap.docs[0].data().photoURL || '',
+      lastSeenAt: serverTimestamp()
+    });
+    return id;
+  }
+  const r = await addDoc(collection(db, 'customer_requests'), {
+    email,
+    name: name || '',
+    photoURL: photoURL || '',
+    status: 'pending',
+    createdAt: serverTimestamp()
+  });
+  return r.id;
+}
+
 // ===== STOCK LOGS =====
 export async function getStockLogs(itemId) {
   const q = query(collection(db, 'stock_logs'), where('itemId', '==', itemId), orderBy('timestamp', 'desc'));
