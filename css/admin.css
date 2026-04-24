@@ -79,3 +79,68 @@
   border-radius: 8px;
   margin-bottom: 12px;
 }
+
+/* ===== Customer access requests ===== */
+.requests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+.request-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg, 14px);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.request-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.request-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--gray-100);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+}
+.request-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.request-info { flex: 1; min-width: 0; }
+.request-name { font-weight: 700; font-size: 1rem; color: var(--gray-900); }
+.request-email { font-size: 0.85rem; color: var(--gray-600); word-break: break-all; }
+.request-meta { font-size: 0.78rem; color: var(--gray-400); margin-top: 2px; }
+.request-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+
+/* ===== Approve modal mode toggle ===== */
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+  background: var(--gray-50);
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.mode-toggle label {
+  flex: 1;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--gray-600);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.mode-toggle input[type="radio"] { display: none; }
+.mode-toggle input[type="radio"]:checked + span { color: var(--white); }
+.mode-toggle label:has(input:checked) { background: var(--primary); color: var(--white); }
+.approve-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px;
+  background: var(--gray-50);
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+.approve-header .request-avatar { background: var(--white); }

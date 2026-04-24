@@ -1,0 +1,83 @@
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a56db 0%, #1e3a8a 100%);
+  padding: 20px;
+}
+.login-card {
+  background: var(--white);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px -12px rgba(15,23,42,0.30), 0 12px 24px -8px rgba(15,23,42,0.18);
+  padding: 44px 36px;
+  width: 100%;
+  max-width: 420px;
+  animation: loginIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes loginIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 480px) {
+  .login-card { padding: 32px 22px; border-radius: 20px; }
+}
+.login-header { text-align: center; margin-bottom: 28px; }
+.login-header .logo-icon { font-size: 2.8rem; margin-bottom: 8px; }
+.login-header h1 { font-size: 1.5rem; color: var(--gray-900); margin-bottom: 4px; }
+.login-header p { color: var(--gray-500); font-size: 0.95rem; }
+
+.login-form .form-group { margin-bottom: 16px; }
+.login-form input {
+  padding: 14px 14px;
+  font-size: 1.05rem;
+  border-radius: 12px;
+}
+.login-form .btn {
+  width: 100%;
+  justify-content: center;
+  padding: 14px;
+  font-size: 1.05rem;
+  border-radius: 12px;
+}
+
+.login-msg {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  text-align: center;
+}
+.login-msg.info { background: var(--primary-light); color: var(--primary); }
+.login-msg.error { background: var(--danger-light); color: var(--danger); }
+.login-msg.success { background: var(--success-light); color: var(--success); }
+
+.login-back {
+  display: block;
+  text-align: center;
+  margin-top: 18px;
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  text-decoration: none;
+}
+.login-back:hover { color: var(--primary); text-decoration: underline; }
+
+.btn-google {
+  background: var(--white) !important;
+  color: var(--gray-900) !important;
+  border: 1px solid var(--gray-200) !important;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+}
+.btn-google:hover {
+  background: var(--gray-50) !important;
+  border-color: var(--gray-300) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15,23,42,0.10);
+}
+.btn-google svg { flex-shrink: 0; }
+.muted-help {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  line-height: 1.5;
+}
