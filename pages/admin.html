@@ -7,58 +7,13 @@
   <link rel="icon" href="../favicon.svg" type="image/svg+xml"/>
   <link rel="stylesheet" href="../css/main.css"/>
   <link rel="stylesheet" href="../css/admin.css"/>
+  <link rel="stylesheet" href="../css/auth-gate.css"/>
 </head>
 <body>
 
-<!-- PASSWORD GATE -->
-<div id="admin-pw-gate" style="position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:18px;padding:44px 36px;max-width:380px;width:92%;text-align:center;box-shadow:0 16px 60px rgba(0,0,0,0.4);">
-    <div style="font-size:2.8rem;margin-bottom:14px;">🔒</div>
-    <h2 style="margin-bottom:6px;font-size:1.5rem;">Admin Access</h2>
-    <p style="color:#64748b;font-size:0.9rem;margin-bottom:26px;">Enter the admin password to continue</p>
-    <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password"
-      style="width:100%;padding:13px 15px;border:2px solid #e2e8f0;border-radius:10px;font-size:1rem;margin-bottom:10px;box-sizing:border-box;outline:none;transition:border-color 0.2s;"
-      onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e2e8f0'"/>
-    <div id="pw-error" style="color:#dc2626;font-size:0.85rem;margin-bottom:12px;display:none;">Incorrect password. Please try again.</div>
-    <button id="btn-pw-submit"
-      style="width:100%;padding:13px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:background 0.2s;"
-      onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Enter Admin Panel</button>
-    <div style="margin-top:18px;">
-      <a href="../index.html" style="color:#94a3b8;font-size:0.85rem;text-decoration:none;">← Back to Home</a>
-    </div>
-  </div>
-</div>
-
-<script>
-(function () {
-  const DEFAULT_PW = 'Tayabi@5253';
-  function getStoredPw() { return localStorage.getItem('tayabi_admin_pw') || DEFAULT_PW; }
-  const gate = document.getElementById('admin-pw-gate');
-  const input = document.getElementById('pw-input');
-  const errEl = document.getElementById('pw-error');
-  const btn = document.getElementById('btn-pw-submit');
-
-  if (sessionStorage.getItem('tayabi_admin_auth') === '1') {
-    gate.style.display = 'none';
-    return;
-  }
-
-  function checkPw() {
-    if (input.value === getStoredPw()) {
-      sessionStorage.setItem('tayabi_admin_auth', '1');
-      gate.style.display = 'none';
-      errEl.style.display = 'none';
-    } else {
-      errEl.style.display = 'block';
-      input.value = '';
-      input.focus();
-    }
-  }
-
-  btn.onclick = checkPw;
-  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') checkPw(); });
-  setTimeout(function () { input.focus(); }, 100);
-})();
+<script type="module">
+  import { mountAdminGate } from '../js/admin-auth.js';
+  mountAdminGate();
 </script>
 
 <div class="page-layout">
@@ -78,7 +33,9 @@
       <button class="tab-btn active" data-tab="items">Items</button>
       <button class="tab-btn" data-tab="stock">Stock</button>
       <button class="tab-btn" data-tab="customers">Customers</button>
+      <button class="tab-btn" data-tab="requests">Requests <span id="requests-badge" class="badge badge-red hidden" style="margin-left:6px;"></span></button>
       <button class="tab-btn" data-tab="orders">Orders</button>
+      <button class="tab-btn" data-tab="cust-orders">Customer Orders</button>
       <button class="tab-btn" data-tab="upload">Photo Upload</button>
     </div>
 
@@ -160,6 +117,37 @@
         </select>
       </div>
       <div id="customers-list"></div>
+    </div>
+
+    <!-- CUSTOMER REQUESTS TAB -->
+    <div id="tab-requests" class="tab-panel hidden">
+      <div class="section-header">
+        <div class="section-title"><h2>Customer Access Requests</h2></div>
+      </div>
+      <p style="color:var(--gray-500);font-size:0.9rem;margin-bottom:14px;">
+        Pending requests from customers who logged in but aren't in your customers list yet.
+      </p>
+      <div id="requests-list"></div>
+    </div>
+
+    <!-- CUSTOMER ORDERS TAB -->
+    <div id="tab-cust-orders" class="tab-panel hidden">
+      <div class="section-header">
+        <div class="section-title"><h2>Customer Orders</h2></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <div class="search-bar" style="flex:1;min-width:200px;">
+          <span class="search-icon">🔍</span>
+          <input type="search" id="cust-order-search" placeholder="Search by name, email or phone..."/>
+        </div>
+        <select id="cust-order-status-filter" style="max-width:160px;">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div id="cust-orders-list"></div>
     </div>
 
     <!-- ORDERS TAB -->
@@ -315,6 +303,69 @@
     </div>
     <div id="order-detail-content"></div>
     <div class="modal-actions" id="order-detail-actions"></div>
+  </div>
+</div>
+
+<!-- MODAL: Approve Customer Request -->
+<div class="modal-overlay hidden" id="modal-approve-request">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-header">
+      <h3>Approve Access Request</h3>
+      <button class="modal-close" data-close="modal-approve-request">&times;</button>
+    </div>
+
+    <div class="approve-header">
+      <div class="request-avatar" id="approve-avatar"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;" id="approve-google-name"></div>
+        <div style="font-size:0.85rem;color:var(--gray-600);word-break:break-all;" id="approve-email"></div>
+      </div>
+    </div>
+
+    <p style="font-size:0.9rem;color:var(--gray-600);margin-bottom:10px;">
+      Choose how to approve this Google account:
+    </p>
+
+    <div class="mode-toggle">
+      <label><input type="radio" name="approve-mode" value="link" checked/><span>Link to existing customer</span></label>
+      <label><input type="radio" name="approve-mode" value="create"/><span>Create new customer</span></label>
+    </div>
+
+    <!-- Link existing -->
+    <div id="approve-link-section">
+      <div class="form-group">
+        <label>Pick the customer this Google account belongs to *</label>
+        <select id="approve-existing-customer"></select>
+        <small style="color:var(--gray-500);font-size:0.8rem;display:block;margin-top:6px;">
+          Customers already linked to a different Google account are disabled.
+        </small>
+      </div>
+    </div>
+
+    <!-- Create new -->
+    <div id="approve-create-section" class="hidden">
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Name *</label>
+        <input type="text" id="approve-new-name" placeholder="Customer name"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Phone *</label>
+        <input type="tel" id="approve-new-phone" placeholder="Mobile number"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Address</label>
+        <textarea id="approve-new-address" placeholder="Address (optional)"></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>City</label>
+        <select id="approve-new-city"></select>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close="modal-approve-request">Cancel</button>
+      <button class="btn btn-success" id="btn-confirm-approve">Approve</button>
+    </div>
   </div>
 </div>
 

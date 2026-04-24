@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard – Tayabi Hardware</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <link rel="stylesheet" href="../css/dashboard.css"/>
+</head>
+<body>
+  <div class="page-layout">
+    <nav class="navbar">
+      <a href="../index.html" class="navbar-brand">&#128296; Tayabi Hardware</a>
+      <div class="navbar-actions">
+        <button class="cart-btn" id="open-cart">🛒 Cart <span class="cart-badge" id="cart-count">0</span></button>
+        <span id="dash-customer" style="font-size:0.9rem;color:var(--gray-500);font-weight:600;"></span>
+        <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+      </div>
+    </nav>
+
+    <header class="dash-hero">
+      <div class="dash-hero-inner">
+        <h1 id="dash-hello">Welcome</h1>
+        <p>Browse products and add what you need to your cart.</p>
+      </div>
+    </header>
+
+    <div class="dash-search-wrap">
+      <div class="dash-search-inner search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="product-search" placeholder="Search products by name..." autocomplete="off"/>
+      </div>
+    </div>
+
+    <main>
+      <div id="product-grid" class="product-grid"></div>
+    </main>
+  </div>
+
+  <!-- CART DRAWER -->
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
+    <div class="cart-header">
+      <h3>Your Cart</h3>
+      <button class="cart-close" id="close-cart" aria-label="Close">&times;</button>
+    </div>
+    <div class="cart-body" id="cart-body"></div>
+    <div class="cart-footer" id="cart-footer">
+      <div class="form-group">
+        <label for="cart-remark">Remark (optional)</label>
+        <textarea id="cart-remark" class="cart-remark" placeholder="Any note for this order..."></textarea>
+      </div>
+      <button class="btn btn-primary cart-place" id="place-order-btn">Place Order</button>
+    </div>
+  </aside>
+
+  <script type="module" src="../js/customer-dashboard.js"></script>
+</body>
+</html>
