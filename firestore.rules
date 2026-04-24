@@ -1,0 +1,72 @@
+rules_version = '2';
+
+// =====================================================================
+// Tayabi Hardware – Firestore Security Rules
+// ---------------------------------------------------------------------
+// Roles
+//   - admin     : Firebase user signed in with email == ADMIN_EMAIL
+//                 (default: admin@tayabi.local). Has full access.
+//   - customer  : Any other authenticated user (anonymous, phone, etc.).
+//                 Can read products and create orders / requests only.
+//   - guest     : Unauthenticated. No access.
+// =====================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == 'admin@tayabi.local';
+    }
+
+    // ---- Products: customers read, admin full access ----
+    match /products/{doc} {
+      allow read:   if isSignedIn();
+      allow write:  if isAdmin();
+    }
+
+    // ---- Items (admin catalogue): admin full, customers read ----
+    match /items/{doc} {
+      allow read:   if isSignedIn();
+      allow write:  if isAdmin();
+    }
+
+    // ---- Orders: admin full; customers can only create their own ----
+    match /orders/{doc} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isSignedIn();
+    }
+
+    // ---- Customers list: admin only ----
+    match /customers/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // ---- Customer requests: anyone signed in can create,
+    //      only admin can read / update / delete ----
+    match /customer_requests/{doc} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ---- Stock logs: admin only ----
+    match /stock_logs/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // ---- Config (cities etc.): authenticated read, admin write ----
+    match /config/{doc} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Fallback: deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
